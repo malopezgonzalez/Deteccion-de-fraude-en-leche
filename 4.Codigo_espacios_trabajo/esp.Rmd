@@ -1,0 +1,150 @@
+---
+title: "R Notebook"
+output: html_notebook
+params:
+  seed: 1992
+  path_mac: "Speciation.csv"
+---
+
+```{r echo = T, results = 'hide'}
+library(smotefamily)
+library(dplyr)
+library(caret)
+```
+
+```{r include=FALSE}
+names <- read.csv(params$path_mac,
+                  sep = ",",
+                  nrows = 1,
+                  header = F
+                  )
+esp <- read.csv(params$path_mac,
+                sep = ",",
+                header = F,
+                skip = 1,
+                col.names = names
+                )
+head(esp)
+```
+
+```{r}
+esp <- select(esp, -c("File", "Start.scan", "End.scan", "Sum."))
+```
+
+```{r}
+esp$Class[esp$Class == "Goat"] <- "Cabra"
+esp$Class[esp$Class == "Cow"] <- "Vaca"
+esp$Class[esp$Class == "Camel"] <- "Camello"
+esp$Class[esp$Class == "Sheep"] <- "Oveja"
+```
+
+
+```{r}
+esp[,-1] <- esp[,-1] %>% mutate_if(is.character, as.numeric)
+esp[, 1] <- esp[,1] %>% as.factor()
+```
+
+```{r}
+set.seed(params$seed)
+split <- createDataPartition(esp$Class, 
+                             times = 1, 
+                             p = 2/3, 
+                             list = F
+                             )
+train <- data.frame(esp[split,])
+test  <- data.frame(esp[-split,])
+```
+
+```{r}
+z_sc <- function(data, mean, std){
+    df_sc <- matrix(ncol=ncol(data),
+                               nrow = nrow(data))
+    if (missing(mean)){
+        mean <- colMeans(data)
+    }
+    if (missing(std)){
+        std <- apply(data, 2, FUN = sd)
+    }
+    for (j in 1:ncol(data)) {
+        for (i in 1:nrow(data)){
+            df_sc[i,j] <- (data[i,j]-mean[j])/std[j]
+        }
+    }
+    df_sc <- as.data.frame(df_sc)
+    colnames(df_sc) <- colnames(data)
+    return(list(data_scaled=df_sc, sd=std, mean=mean))
+}
+```
+
+```{r}
+p.train <- z_sc(train[,-1])
+mean <- p.train$mean
+sd <- p.train$sd
+p.test <- z_sc(test[,-1], p.train$mean, p.train$sd)
+p.train <- p.train$data_scaled
+p.train <- cbind.data.frame(Class=as.factor(train$Class), p.train)
+p.test <- p.test$data_scaled
+p.test <- cbind.data.frame(Class=as.factor(test$Class), p.test)
+```
+
+```{r}
+smote <- function(data, class_col, K, dup_size){
+    levels <- levels(data[,class_col])
+    num_var <- length(data)
+    i <- 1
+    while (i<=length(levels)) {
+        ifelse (i==1, 
+                new_data <- SMOTE(X = data[,-class_col], data[,class_col], K = K, dup_size = dup_size),
+                new_data <- SMOTE(X = new_data$data[,-num_var], new_data$data[,num_var], K = K, dup_size = dup_size))
+        i <- i+1
+        }
+    new_data$data$class <- factor(new_data$data$class)
+    new_data$data <- cbind.data.frame(Class=new_data$data$class,
+                                      new_data$data[-num_var])
+    return(new_data)
+}
+```
+
+```{r}
+a.train <- smote(data = p.train,
+                 class_col = 1,
+                 K = 5,
+                 dup_size = 25
+                 )
+a.train <- a.train$data
+a.test <- smote(data = p.test,
+                class_col = 1,
+                K = 5,
+                dup_size = 25
+                )
+a.test <- a.test$data
+name_var <- names(a.train[,-1])
+```
+
+```{r}
+pca <- prcomp(a.train[,-1], scale. = F,  center = F)
+```
+
+```{r}
+PCs <- sum(pca$sdev>1)
+PCs
+```
+
+```{r}
+pca.train <- pca$x[,1:PCs]
+pca.train <- cbind.data.frame(Class=as.factor(a.train$Class), pca.train)
+```
+
+```{r}
+pca.test <- predict(pca, a.test[-1])[,1:PCs]
+pca.test <- cbind.data.frame(Class=as.factor(a.test$Class), pca.test)
+```
+
+```{r}
+set.seed(1992)
+svmpca <- ksvm(Class~.,
+             data=pca.train,
+             kernel="vanilladot"
+             )
+svmpca
+```
