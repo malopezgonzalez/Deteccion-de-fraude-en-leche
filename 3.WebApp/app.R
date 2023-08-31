@@ -143,7 +143,7 @@ ui <- fluidPage(
                               <br>
                               
                               El presente trabajo de final de máster se basa en los datos empleados por 
-                              Piras y Cramer en su estudio <a href ='https://doi.org/10.1038/s41598-021-82846-5'>
+                              <i>Piras et al.</i> en su estudio <a href ='https://doi.org/10.1038/s41598-021-82846-5'>
                               <i>Speciation and milk adulteration analysis by rapid ambient liquid MALDI mass spectrometry
                               profiling using machine learning</i></a> tratando de reproducir
                               el mismo análisis empleado algoritmos de <i>machine learning</i> alternativos afrontando el problema
