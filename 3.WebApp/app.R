@@ -139,7 +139,7 @@ ui <- fluidPage(
                               <i>Detección de fraude alimentario en leche: Análisis de especiación de leche y detección de leche de cabra 
                               adulterada con leches de menor calidad empleando aprendizaje automático.</i>
                               del máster en bioinformática y bioestádistica ofrecido por la Universitat Oberta de Catalunya
-                              y la Universitat de Barcelona. <br>
+                              y la Universitat de Barcelona y a la memoria del cual puede accederse desde el repositorio institucional de la Universitat Oberta de Catalunya (O2) mediante el siguiente enlace: <a href='http://hdl.handle.net/10609/148753'>http://hdl.handle.net/10609/148753</a><br>
                               <br>
                               
                               El presente trabajo de final de máster se basa en los datos empleados por 
